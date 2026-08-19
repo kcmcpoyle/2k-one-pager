@@ -56,6 +56,16 @@
   }
   [contenteditable="true"]:focus{outline:2px solid var(--amp-blue-light);outline-offset:2px;border-radius:3px}
 
+  /* Image slots (click to upload / replace) */
+  .img-slot{cursor:pointer;display:inline-flex;align-items:center;gap:6px;vertical-align:middle}
+  .img-slot:hover{opacity:.82}
+  .img-slot img{max-height:30px;max-width:160px;display:inline-block;vertical-align:middle}
+  .img-slot.empty{border:1.5px dashed rgba(0,0,0,.28);border-radius:8px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.3px;text-transform:uppercase}
+  .img-slot.empty .material-symbols-rounded{font-size:16px}
+  .topbar .img-slot img{max-height:30px}
+  .panel.blue .img-slot.empty{border-color:rgba(255,255,255,.55);color:rgba(255,255,255,.9)}
+  .page img.inserted{max-width:240px;height:auto;border-radius:6px;margin:6px 0}
+
   /* Context bar */
   .topbar{background:var(--black);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:10px 30px}
   .brand-logo{font-weight:700;font-size:26px;letter-spacing:-1px;line-height:1}
@@ -126,7 +136,8 @@
     @page{size:Letter portrait;margin:0}
     html,body{background:#fff;padding:0;margin:0}
     .toolbar,.toast{display:none!important}
-    .page{box-shadow:none;width:816px;min-height:0;zoom:.94}
+    .img-slot.empty{display:none!important}
+    .page{box-shadow:none;width:816px;min-height:0;zoom:.9}
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
   @media(max-width:860px){
@@ -140,18 +151,20 @@
 
   <!-- Edit toolbar (does not print) -->
   <div class="toolbar">
-    <span class="hint">&#9998; Click any text to edit it</span>
+    <span class="hint">&#9998; Click any text to edit &middot; click a logo slot or Add image to add pictures</span>
+    <button onclick="addImageAtCursor()">&#128247; Add image</button>
     <button class="primary" onclick="saveEdits()">&#128190; Save edits</button>
     <button onclick="window.print()">&#128424; Save as PDF</button>
     <button onclick="resetEdits()">&#8635; Reset</button>
   </div>
+  <input type="file" id="imgInput" accept="image/*" style="display:none">
 
   <div class="page" id="content" contenteditable="true">
 
     <!-- Context bar with white 2K logo -->
     <!-- TODO: replace the 2K text wordmark with 2K's official logo asset when available -->
     <header class="topbar">
-      <div class="brand-logo" aria-label="2K">2K</div>
+      <div class="brand-logo img-slot" contenteditable="false" onclick="pickImage(this)" title="Click to upload the 2K logo (use a white or transparent PNG)">2K</div>
       <div class="context">For 2K &middot; Amplitude, Statsig &amp; Wave</div>
     </header>
 
@@ -165,6 +178,7 @@
     <!-- Statsig + Wave -->
     <section class="split">
       <div class="panel light">
+        <div style="margin-bottom:9px"><span class="img-slot empty" contenteditable="false" onclick="pickImage(this)"><span class="material-symbols-rounded">image</span> Upload Statsig logo</span></div>
         <div class="kicker">The modern product development platform</div>
         <h2>Statsig: measure what ships, ship what matters</h2>
         <p>Test how every release lands with players, from live-ops events to monetization and AI-powered experiences, so 2K protects the player experience and optimizes at the speed of live service.</p>
@@ -183,6 +197,7 @@
       </div>
 
       <div class="panel blue">
+        <div style="margin-bottom:9px"><span class="img-slot empty" contenteditable="false" onclick="pickImage(this)"><span class="material-symbols-rounded">image</span> Upload Wave logo</span></div>
         <div class="kicker">Closed beta &middot; rolling out H2 2026</div>
         <h2>Wave: the AI analyst for your player data</h2>
         <p>Wave analyzes your player data and code, surfaces what to build next for each title, orchestrates the plans, PRs, and experiments, then measures the impact. It is rolling out now to a small group of design partners.</p>
@@ -281,6 +296,33 @@
       try{localStorage.removeItem(KEY);}catch(e){}
       c.innerHTML=original;toast('Reset to original');
     };
+
+    /* ---- Image add / edit ---- */
+    var fi=document.getElementById('imgInput');
+    var pendingSlot=null;
+    window.pickImage=function(slot){pendingSlot=slot;fi.dataset.mode='slot';fi.value='';fi.click();};
+    window.addImageAtCursor=function(){pendingSlot=null;fi.dataset.mode='insert';fi.value='';fi.click();};
+    fi.addEventListener('change',function(){
+      var f=fi.files&&fi.files[0];if(!f)return;
+      if(!/^image\//.test(f.type)){toast('Please choose an image file');return;}
+      var rd=new FileReader();
+      rd.onload=function(){
+        if(fi.dataset.mode==='insert'){
+          c.focus();
+          var img='<img class="inserted" src="'+rd.result+'" alt="">';
+          var ok=false;
+          try{ok=document.execCommand('insertHTML',false,img);}catch(e){}
+          if(!ok){var d=document.createElement('div');d.innerHTML=img;c.querySelector('.hero').appendChild(d.firstChild);}
+          toast('Image added. Save edits to keep it');
+        } else if(pendingSlot){
+          pendingSlot.classList.remove('empty');
+          pendingSlot.innerHTML='<img src="'+rd.result+'" alt="logo">';
+          toast('Logo added. Save edits to keep it');
+        }
+        fi.dataset.mode='';pendingSlot=null;
+      };
+      rd.readAsDataURL(f);
+    });
   })();
 </script>
 </body>
