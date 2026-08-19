@@ -1,329 +1,697 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>2K + Amplitude | Wave and Statsig for Self-Improving Games</title>
+<title>2K + Amplitude | Statsig × Amplitude × Wave</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,300,0,0">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,300,0,0" rel="stylesheet">
 <style>
-  :root{
-    --amp-blue:#0052F2;
-    --amp-blue-dark:#001A4F;
-    --amp-blue-light:#4083FF;
-    --black:#000;
-    --ink:#0b1020;
-    --muted:#5b6472;
-    --line:#e6e8ee;
-    --card:#f5f6fa;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    font-family:'Gellix','Poppins',Helvetica,Arial,sans-serif;
-    color:var(--ink);background:#eef0f4;
-    -webkit-font-smoothing:antialiased;line-height:1.38;
-    padding:14px 0;
-  }
-  .material-symbols-rounded{font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 20;vertical-align:middle;font-size:20px}
+/* ── RESET ── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Poppins', Helvetica, Arial, sans-serif; /* Poppins = approved Gellix substitute */
+  background: #D5D9E0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  padding: 72px 0 64px;
+}
+.material-symbols-rounded {
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
 
-  /* Edit toolbar */
-  .toolbar{
-    max-width:816px;margin:0 auto 14px;display:flex;align-items:center;gap:8px;
-    background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 12px;
-    font-size:13px;box-shadow:0 4px 18px rgba(0,0,0,.06);
-  }
-  .toolbar .hint{color:var(--muted);margin-right:auto;font-weight:500}
-  .toolbar button{
-    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
-    border:1px solid var(--line);background:#fff;color:var(--ink);
-    border-radius:8px;padding:7px 12px;
-  }
-  .toolbar button:hover{background:var(--card)}
-  .toolbar button.primary{background:var(--amp-blue);color:#fff;border-color:var(--amp-blue)}
-  .toast{
-    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-    background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;
-    opacity:0;transition:opacity .25s;pointer-events:none;z-index:99;
-  }
-  .toast.show{opacity:1}
+/* ── PAGE ── */
+.page {
+  width: 850px;
+  height: 1125px;
+  background: #fff;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
-  /* The single sheet (US Letter portrait) */
-  .page{
-    width:816px;min-height:1056px;margin:0 auto;background:#fff;
-    box-shadow:0 10px 50px rgba(0,0,0,.12);display:flex;flex-direction:column;
-  }
-  [contenteditable="true"]:focus{outline:2px solid var(--amp-blue-light);outline-offset:2px;border-radius:3px}
+/* ── PRINT ── */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  @page { size: 850px 1125px; margin: 0; }
+  html, body { background: #fff !important; padding: 0 !important; margin: 0 !important; display: block !important; width: 850px !important; }
+  .page { width: 850px !important; box-shadow: none !important; page-break-inside: avoid; page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+  .toolbar { display: none !important; }
+  [contenteditable] { background: none !important; box-shadow: none !important; outline: none !important; }
+  .upload-overlay { display: none !important; }
+}
 
-  /* Image slots (click to upload / replace) */
-  .img-slot{cursor:pointer;display:inline-flex;align-items:center;gap:6px;vertical-align:middle}
-  .img-slot:hover{opacity:.82}
-  .img-slot img{max-height:30px;max-width:160px;display:inline-block;vertical-align:middle}
-  .img-slot.empty{border:1.5px dashed rgba(0,0,0,.28);border-radius:8px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.3px;text-transform:uppercase}
-  .img-slot.empty .material-symbols-rounded{font-size:16px}
-  .topbar .img-slot img{max-height:30px}
-  .panel.blue .img-slot.empty{border-color:rgba(255,255,255,.55);color:rgba(255,255,255,.9)}
-  .page img.inserted{max-width:240px;height:auto;border-radius:6px;margin:6px 0}
+/* ── EDIT UI ── */
+[contenteditable] { outline: none; cursor: text; }
+[contenteditable]:hover { background: rgba(0,82,242,0.07); border-radius: 2px; }
+[contenteditable]:focus { background: rgba(0,82,242,0.10); border-radius: 2px; box-shadow: 0 0 0 2px rgba(0,82,242,0.35); }
 
-  /* Context bar */
-  .topbar{background:var(--black);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:10px 30px}
-  .brand-logo{font-weight:700;font-size:26px;letter-spacing:-1px;line-height:1}
-  .topbar .context{font-size:10.5px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:#c9cfda}
+.toolbar {
+  position: fixed;
+  top: 16px; left: 50%; transform: translateX(-50%);
+  background: #000;
+  color: rgba(255,255,255,0.9);
+  display: flex; align-items: center;
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  z-index: 9999;
+  font-size: 12px;
+  overflow: hidden;
+}
+.toolbar-item {
+  padding: 9px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
+  border: none; background: none; color: rgba(255,255,255,0.85);
+  font-size: 12px; font-family: inherit;
+}
+.toolbar-item:hover { background: rgba(255,255,255,0.1); }
+.toolbar-sep { width: 1px; background: rgba(255,255,255,0.15); height: 28px; }
+input[type=file] { display: none; }
 
-  /* Hero */
-  .hero{padding:16px 30px 12px}
-  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:10.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--amp-blue);margin-bottom:10px}
-  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--amp-blue)}
-  .hero h1{font-size:31px;line-height:1.02;font-weight:700;letter-spacing:-1.2px;max-width:22ch}
-  .hero p.lede{margin-top:8px;font-size:13px;line-height:1.42;color:var(--muted);max-width:80ch}
+.upload-overlay {
+  position: absolute;
+  inset: -4px;
+  border: 1.5px dashed rgba(0,82,242,0.55);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+  z-index: 10;
+}
+.upload-overlay span {
+  color: #fff; font-size: 10px; font-weight: 600;
+  background: rgba(0,0,0,0.65); padding: 3px 6px; border-radius: 4px; white-space: nowrap;
+}
+.logo-upload-wrap { position: relative; cursor: pointer; display: inline-flex; align-items: center; }
+.logo-upload-wrap:hover .upload-overlay { opacity: 1; }
 
-  /* Product split */
-  .split{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
-  .panel{padding:15px 30px}
-  .panel.light{border-right:1px solid var(--line)}
-  .panel.blue{background:var(--amp-blue);color:#fff}
-  .kicker{font-size:9.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-  .panel.blue .kicker{color:rgba(255,255,255,.8)}
-  .panel h2{font-size:20px;line-height:1.1;font-weight:700;letter-spacing:-.5px;margin-bottom:9px}
-  .panel p{font-size:12.5px;color:var(--muted);line-height:1.45}
-  .panel.blue p{color:rgba(255,255,255,.92)}
-  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-  .tag{border:1.5px solid var(--line);border-radius:999px;padding:5px 11px;font-size:11px;font-weight:600;color:var(--ink)}
-  .panel.blue .tag{border-color:rgba(255,255,255,.4);color:#fff}
-  .stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-top:11px}
-  .stat .num{font-size:20px;font-weight:700;letter-spacing:-.5px;line-height:1}
-  .stat .lbl{font-size:9px;color:var(--muted);margin-top:4px;line-height:1.25}
-  .highlight{margin-top:9px;font-size:11.5px;font-weight:600;color:#fff;background:rgba(255,255,255,.12);border-radius:8px;padding:7px 11px}
+/* ═══════════ FRONT ═══════════ */
 
-  /* Loop */
-  .loop{padding:13px 30px;border-top:1px solid var(--line)}
-  .section-head h2{font-size:19px;font-weight:700;letter-spacing:-.5px}
-  .section-head p{color:var(--muted);font-size:12px;margin-top:5px}
-  .loop-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-top:11px}
-  .loop-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px}
-  .loop-card .icon{width:28px;height:28px;border-radius:8px;background:var(--amp-blue);color:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:7px}
-  .loop-card .prod{font-size:9px;font-weight:700;letter-spacing:1.4px;color:var(--amp-blue);text-transform:uppercase}
-  .loop-card h3{font-size:15px;font-weight:700;margin:2px 0 6px}
-  .loop-card p{font-size:11px;color:var(--muted);line-height:1.4}
+/* Top band */
+.topband {
+  background: #000;
+  padding: 18px 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.amp-logo-img { height: 24px; width: auto; display: block; }
+.topband-event {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+}
+.topband-event .dot { color: #4083FF; margin: 0 8px; }
 
-  /* Steps strip */
-  .steps{padding:13px 30px;border-top:1px solid var(--line);background:var(--amp-blue-dark);color:#fff}
-  .steps .row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:10px}
-  .steps h2{font-size:18px;font-weight:700;letter-spacing:-.5px}
-  .steps .sub{color:rgba(255,255,255,.8);font-size:11.5px;text-align:right}
-  .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  .step{border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:10px;background:rgba(255,255,255,.05)}
-  .step .n{width:22px;height:22px;border-radius:50%;background:var(--amp-blue-light);color:#001A4F;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
-  .step h4{font-size:13px;font-weight:600;margin-bottom:5px}
-  .step p{font-size:10.5px;color:rgba(255,255,255,.82);line-height:1.4}
+/* Intro strip */
+.intro {
+  padding: 30px 44px 24px;
+  background: #fff;
+}
+.intro h1 {
+  font-size: 34px;
+  font-weight: 700; /* Bold reserved for key display headings */
+  color: #000;
+  letter-spacing: -0.6px;
+  line-height: 1.12;
+  margin-bottom: 8px;
+}
+.intro p {
+  font-size: 14px;
+  font-weight: 400;
+  color: #505658;
+  line-height: 1.55;
+  max-width: 640px;
+}
 
-  /* Logo bar near footer */
-  .logobar{padding:11px 30px;border-top:1px solid var(--line);text-align:center;margin-top:auto}
-  .logobar .cap{font-size:9.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-  .logos{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:26px}
-  .logos span{font-size:15px;font-weight:700;color:#a4abb8;letter-spacing:-.3px}
+/* Split panels */
+.split {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.panel {
+  flex: 1;
+  padding: 34px 36px 28px;
+  display: flex;
+  flex-direction: column;
+}
+.panel-statsig { background: #fff; border-top: 1px solid #D5D9E0; }
+.panel-amp { background: #0052F2; }
 
-  /* Footer */
-  .footer{background:var(--black);color:#fff;padding:12px 30px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
-  .footer .copy{font-size:10.5px;color:rgba(255,255,255,.6)}
-  .footer .ae .name{font-weight:600;font-size:13px}
-  .footer .ae .role{font-size:11px;color:rgba(255,255,255,.72);margin-top:1px}
-  .footer .ae .email{font-size:11px;color:var(--amp-blue-light);margin-top:1px}
+.statsig-wordmark {
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #000;
+  line-height: 1;
+}
+.panel-eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  margin: 12px 0 20px;
+}
+.panel-statsig .panel-eyebrow { color: #697077; }
+.panel-amp .panel-eyebrow { color: rgba(255,255,255,0.75); }
 
-  /* Print: one page, keep colors, hide toolbar */
-  @media print{
-    @page{size:Letter portrait;margin:0}
-    html,body{background:#fff;padding:0;margin:0}
-    .toolbar,.toast{display:none!important}
-    .img-slot.empty{display:none!important}
-    .page{box-shadow:none;width:816px;min-height:0;zoom:.9}
-    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  }
-  @media(max-width:860px){
-    .page{width:100%}
-    body{padding:10px}
-    .toolbar{max-width:100%;margin:0 10px 12px;flex-wrap:wrap}
-  }
+.panel h2 {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  line-height: 1.18;
+  margin-bottom: 14px;
+}
+.panel-statsig h2 { color: #000; }
+.panel-amp h2 { color: #fff; }
+
+.panel-body {
+  font-size: 13.5px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.panel-statsig .panel-body { color: #505658; }
+.panel-amp .panel-body { color: rgba(255,255,255,0.92); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.panel-statsig .chip { border: 1px solid #B9BFC7; color: #262A2E; }
+.panel-amp .chip { border: 1px solid rgba(255,255,255,0.55); color: #fff; }
+
+.stats {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 22px;
+  padding-top: 22px;
+}
+.stat { border-top: 2px solid; padding-top: 10px; }
+.panel-statsig .stat { border-color: #000; }
+.panel-amp .stat { border-color: rgba(255,255,255,0.85); }
+.stat-num { font-size: 27px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.05; margin-bottom: 4px; }
+.stat-label { font-size: 11px; line-height: 1.45; }
+.panel-statsig .stat-num { color: #000; }
+.panel-statsig .stat-label { color: #697077; }
+.panel-amp .stat-num { color: #fff; }
+.panel-amp .stat-label { color: rgba(255,255,255,0.8); }
+
+/* Wave band */
+.waveband {
+  background: #001A4F;
+  padding: 26px 44px 24px;
+  display: flex;
+  gap: 34px;
+  align-items: flex-start;
+}
+.waveband-left { flex: 0 0 190px; }
+.wave-name {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  display: flex; align-items: center; gap: 9px;
+}
+.wave-name .material-symbols-rounded { font-size: 26px; color: #fff; }
+.wave-status {
+  margin-top: 10px;
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.45);
+  border-radius: 20px;
+  padding: 5px 12px;
+  line-height: 1.4;
+}
+.waveband-right { flex: 1; }
+.wave-copy {
+  color: rgba(255,255,255,0.94);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+.wave-proof {
+  color: rgba(255,255,255,0.78);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.wave-proof .wave-link { color: #4083FF; font-weight: 500; }
+
+/* Front footer teaser */
+.front-footer {
+  background: #000;
+  padding: 14px 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.front-footer .teaser {
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.front-footer .teaser .material-symbols-rounded { font-size: 17px; margin-right: 7px; color: #4083FF; }
+.front-footer .flip { color: rgba(255,255,255,0.55); font-size: 11px; }
+
+/* ═══════════ BACK ═══════════ */
+
+.back-header {
+  background: linear-gradient(150deg, #000 0%, #001A4F 60%, #0A2A6B 100%);
+  padding: 34px 44px 34px;
+  position: relative;
+  overflow: hidden;
+}
+.shapes-wrap {
+  position: absolute;
+  top: 0; right: 0;
+  width: 360px; height: 260px;
+  z-index: 1;
+  pointer-events: none;
+}
+.shapes-wrap svg { width: 100%; height: 100%; }
+.back-header-content { position: relative; z-index: 3; max-width: 560px; }
+.back-eyebrow {
+  color: #4083FF;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.back-header h1 {
+  color: #fff;
+  font-size: 31px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.16;
+  margin-bottom: 6px;
+}
+.back-header .session-sub {
+  color: rgba(255,255,255,0.85);
+  font-size: 17px;
+  font-weight: 500;
+  margin-bottom: 18px;
+}
+.session-meta {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.meta-item {
+  color: rgba(255,255,255,0.9);
+  font-size: 12px;
+  display: flex; align-items: center; gap: 7px;
+}
+.meta-item .material-symbols-rounded { font-size: 17px; color: #4083FF; }
+.abstract {
+  color: rgba(255,255,255,0.75);
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+/* Loop section */
+.back-body { padding: 30px 44px 26px; flex: 1; display: flex; flex-direction: column; }
+.section-title {
+  font-size: 19px;
+  font-weight: 600;
+  color: #000;
+  letter-spacing: -0.3px;
+  margin-bottom: 6px;
+}
+.section-sub {
+  font-size: 13px;
+  color: #505658;
+  line-height: 1.55;
+  margin-bottom: 22px;
+  max-width: 660px;
+}
+.loop-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 28px;
+}
+.loop-step {
+  flex: 1;
+  background: #F2F4F8;
+  border-radius: 10px;
+  padding: 16px 14px 14px;
+}
+.loop-arrow {
+  align-self: center;
+  color: #0052F2;
+  flex: 0 0 26px;
+  text-align: center;
+}
+.loop-arrow .material-symbols-rounded { font-size: 20px; }
+.loop-icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  background: #0052F2;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+}
+.loop-icon .material-symbols-rounded { color: #fff; font-size: 20px; }
+.loop-kicker {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: #0052F2;
+  margin-bottom: 3px;
+}
+.loop-title { font-size: 14.5px; font-weight: 600; color: #000; margin-bottom: 6px; }
+.loop-desc { font-size: 11.5px; color: #505658; line-height: 1.55; }
+
+/* Actions */
+.actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-top: auto; }
+.action {
+  border: 1px solid #D5D9E0;
+  border-radius: 10px;
+  padding: 16px 16px 14px;
+  position: relative;
+}
+.action-num {
+  position: absolute;
+  top: -12px; left: 14px;
+  background: #000;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.action-title { font-size: 13.5px; font-weight: 600; color: #000; margin: 4px 0 6px; }
+.action-desc { font-size: 11.5px; color: #505658; line-height: 1.55; }
+.action-desc .act-link { color: #0052F2; font-weight: 500; }
+
+/* Back footer */
+.back-footer {
+  padding: 14px 44px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #D5D9E0;
+  background: #fff;
+}
+.footer-copy { font-size: 10px; color: #9FA5AD; line-height: 1.5; }
+.ae-block { text-align: right; }
+.ae-name { font-size: 12.5px; font-weight: 600; color: #000; }
+.ae-title { font-size: 11px; color: #697077; margin-top: 1px; }
+.ae-contact { font-size: 11px; color: #0052F2; margin-top: 2px; }
 </style>
 </head>
 <body>
 
-  <!-- Edit toolbar (does not print) -->
-  <div class="toolbar">
-    <span class="hint">&#9998; Click any text to edit &middot; click a logo slot or Add image to add pictures</span>
-    <button onclick="addImageAtCursor()">&#128247; Add image</button>
-    <button class="primary" onclick="saveEdits()">&#128190; Save edits</button>
-    <button onclick="window.print()">&#128424; Save as PDF</button>
-    <button onclick="resetEdits()">&#8635; Reset</button>
+<input type="file" id="upload-statsig-logo" accept="image/*">
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <span class="toolbar-item">✏️ Click any text to edit</span>
+  <div class="toolbar-sep"></div>
+  <button class="toolbar-item" id="save-status" onclick="saveHTML()">💾 Save edits</button>
+  <div class="toolbar-sep"></div>
+  <button class="toolbar-item" onclick="printPDF()">🖨️ Save as PDF</button>
+  <div class="toolbar-sep"></div>
+  <button class="toolbar-item" onclick="resetEdits()" style="color:#ff9a9a">↺ Reset</button>
+</div>
+
+<!-- ═══════════ PAGE 1: FRONT ═══════════ -->
+<div class="page">
+
+  <div class="topband">
+    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAwIDEwMDAiIHdpZHRoPSI1MDAwIiBoZWlnaHQ9IjEwMDAiPgoJPHN0eWxlPgoJCXRzcGFuIHsgd2hpdGUtc3BhY2U6cHJlIH0KCQkuc2hwMCB7IGZpbGw6IHdoaXRlIH0gCgk8L3N0eWxlPgoJPHBhdGggaWQ9IlBhdGggMSIgY2xhc3M9InNocDAiIGQ9Ik00MzguOTUgMjI4LjY0QzQzNi4xOSAyMjUgNDMzLjA1IDIyMy4wOSA0MjkuNTYgMjIzLjA5QzQyNi42OCAyMjMuMDkgNDI0LjA1IDIyNC4zOCA0MjIuMzYgMjI1LjQ2QzM5NS44NCAyNDYuMjkgMzU5LjU1IDMzNC41MyAzMjkuODEgNDUwLjhMMzU2LjE0IDQ1MS4xQzQwOC4xMyA0NTEuNjkgNDYxLjgyIDQ1Mi4zIDUxNC44OSA0NTMuMTJDNTAwLjkgMzk5Ljg2IDQ4Ny42OCAzNTQuMjEgNDc1LjU2IDMxNy4zNkM0NTcuODUgMjYzLjUgNDQ1Ljg4IDIzOS4zOSA0MzguOTUgMjI4LjY0WiIgLz4KCTxwYXRoIGlkPSJQYXRoIDIiIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xhc3M9InNocDAiIGQ9Ik05OTUuOTkgNTAyLjQ3Qzk5NS45OSA3NzcuNSA3NzMuMDMgMTAwMC40NyA0OTcuOTkgMTAwMC40N0MyMjIuOTUgMTAwMC40NyAtMC4wMSA3NzcuNSAtMC4wMSA1MDIuNDdDLTAuMDEgMjI3LjQzIDIyMi45NSA0LjQ3IDQ5Ny45OSA0LjQ3Qzc3My4wMyA0LjQ3IDk5NS45OSAyMjcuNDMgOTk1Ljk5IDUwMi40N1pNODY1LjgxIDQ5MS4wOEM4NjUuODEgNDc4LjI5IDg1Ni44IDQ2Ny42MyA4NDQuNjYgNDY1LjJDODQ0LjU5IDQ2NS4xOSA4NDQuNTIgNDY1LjE3IDg0NC40NCA0NjUuMTVDODQ0LjMgNDY1LjEzIDg0NC4xNiA0NjUuMDggODQ0LjAyIDQ2NS4wNkw4NDMuNTMgNDY1LjAxQzg0Mi4yNCA0NjQuOCA4NDAuOTMgNDY0LjY3IDgzOS41OSA0NjQuNjVMODM2LjEgNDY0LjMyQzc1Mi42OSA0NTguMzUgNjY2Ljg4IDQ1NiA1ODYuMzggNDU0LjM5TDU4Ni4yMiA0NTMuOEM1NDcuMDQgMzA2Ljg0IDQ5OC4xIDE1Ni41OSA0MzIuMTEgMTU2LjU5QzM3MC42MiAxNTYuODcgMzE1LjE5IDI1NS41OSAyNjcuMzIgNDUwLjA3QzIzMy41IDQ0OS42NCAyMDIuNjcgNDQ5LjE3IDE3My42IDQ0OC42N0MxNzEuOTUgNDQ4LjY0IDE3MC40NyA0NDguNjMgMTY5LjE1IDQ0OC42M0MxNjIuOTUgNDQ4LjYzIDE1OS45MiA0NDguODkgMTU4LjQyIDQ0OS4wOUMxNDIuMDUgNDUxLjk5IDEzMC4xNyA0NjYuMjcgMTMwLjE3IDQ4My4wNkMxMzAuMTcgNTAwLjE4IDE0Mi45NSA1MTQuODYgMTU5LjYgNTE3LjI2TDE1OS45NCA1MTcuNjFMMjUxLjY0IDUxNy42MUMyNDMuMTMgNTU2LjUyIDIzNS42NyA1OTUgMjI5LjQ0IDYzMi4wN0wyMjYuNzEgNjQ4LjM5TDIyNi42OCA2NDkuMTdDMjI2Ljc0IDY2MS43NiAyMzcuMDMgNjcyIDI0OS42MSA2NzJDMjU3LjU5IDY3MiAyNjQuODIgNjY3Ljg0IDI2OC45NSA2NjEuMzZMMjY5LjYgNjYxLjg4TDMxNC42OCA1MTcuNjFMNTMxLjgyIDUxNy42MUM1NDguNDEgNTgwLjI5IDU2NS42MiA2NDUuMDEgNTg4LjM2IDcwNS43NUM2MDAuNTIgNzM4LjIzIDYyOC45OSA4MTQuMyA2NzYuNTcgODE0LjY4TDY3Ny4xMSA4MTQuNjhDNzUwLjc1IDgxNC42OCA3NzkuNDUgNjk1LjczIDc5OC40NiA2MTYuOTlDODAyLjU0IDYwMC4wNSA4MDYuMDcgNTg1LjQyIDgwOS40IDU3NC42N0w4MTAuNzMgNTcwLjIzTDgxMC43MiA1NzAuMjNDODExLjA0IDU2OS4xOSA4MTEuMjEgNTY4LjA5IDgxMS4yMSA1NjYuOTRDODExLjIxIDU2MC42NCA4MDYuMSA1NTUuNTMgNzk5LjggNTU1LjUzQzc5NC45MSA1NTUuNTMgNzkwLjc1IDU1OC42IDc4OS4xMiA1NjIuOTJMNzg5LjEgNTYyLjkxTDc4Ny41IDU2Ny4zM0M3ODEuMjUgNTg0LjYzIDc3NS40NyA2MDAuOTkgNzcwLjM1IDYxNS40OUw3NjkuOTYgNjE2LjU4QzczOC4wOSA3MDYuODUgNzIzLjU0IDc0OC4wNSA2OTUuMDQgNzQ4LjA2TDY5NC4zNCA3NDguMDVMNjkzLjk0IDc0OC4xMUw2OTMuMjMgNzQ4LjA5QzY1Ni43NSA3NDguMDkgNjIyLjQgNTk5Ljc5IDYwOS40NyA1NDMuOTdDNjA3LjIzIDUzNC4zIDYwNS4xOCA1MjUuNDIgNjAzLjI5IDUxNy42MUw4MzkuMTggNTE3LjYxQzg0My42MSA1MTcuNjEgODQ3Ljc4IDUxNi41IDg1MS40NCA1MTQuNThDODUxLjQ3IDUxNC41NyA4NTEuNDkgNTE0LjU2IDg1MS41MSA1MTQuNTVDODUxLjg4IDUxNC4zNiA4NTIuMjMgNTE0LjE0IDg1Mi41OSA1MTMuOTNDODUyLjk5IDUxMy43IDg1My4zOCA1MTMuNDcgODUzLjc2IDUxMy4yMkM4NTMuOTUgNTEzLjEgODU0LjEzIDUxMi45NyA4NTQuMzEgNTEyLjg0Qzg1NC44OCA1MTIuNDUgODU1LjQzIDUxMi4wNCA4NTUuOTcgNTExLjZDODU2LjAxIDUxMS41NyA4NTYuMDQgNTExLjU0IDg1Ni4wOCA1MTEuNTFDODYyLjAyIDUwNi42NCA4NjUuODEgNDk5LjI2IDg2NS44MSA0OTEuMDhaTTEyNzIuMzUgNjI3LjA3TDEyMzIuODcgNzI0LjY0TDExMTguMTggNzI0LjY0TDEzMzYuNCAyMTUuMjFMMTQzNy42OSAyMTUuMjFMMTY1NS4xNiA3MjQuNjRMMTU0MS4yMSA3MjQuNjRMMTUwMS43NCA2MjcuMDdMMTI3Mi4zNSA2MjcuMDdaTTEzODYuMyAzNDQuMDVMMTMxMS44MiA1MjkuNUwxNDYyLjI3IDUyOS41TDEzODYuMyAzNDQuMDVaTTIzMDEuNjMgNTI4Ljc2TDIzMDEuNjMgNzI0LjY0TDIxOTguMTEgNzI0LjY0TDIxOTguMTEgNTM3LjdDMjE5OC4xMSA0ODEuMDkgMjE3MC41NSA0NTAuNTYgMjEyMi4xNCA0NTAuNTZDMjEwMC41NCA0NTAuNTYgMjA3Ni43MSA0NjAuMjQgMjA1NS4xMSA0OTAuMDNDMjA1Ni42IDUwMi42OSAyMDU4LjA5IDUxNS4zNSAyMDU4LjA5IDUyOC43NkwyMDU4LjA5IDcyNC42NEwxOTU0LjU2IDcyNC42NEwxOTU0LjU2IDUzNy43QzE5NTQuNTYgNDgxLjA5IDE5MjcuMDEgNDUwLjU2IDE4NzcuODUgNDUwLjU2QzE4NTcuNzQgNDUwLjU2IDE4MzUuNCA0NjIuNDcgMTgxNC41NSA0OTAuNzhMMTgxNC41NSA3MjQuNjRMMTcxMS4wMiA3MjQuNjRMMTcxMS4wMiAzNjcuODlMMTgxNC41NSAzNjcuODlMMTgxNC41NSAzODkuNDlDMTgzNi44OSAzNjguNjMgMTg2MC43MiAzNTYuNzIgMTkwMi40MyAzNTYuNzJDMTk0Ny44NiAzNTYuNzIgMTk4OC4wOCAzNzQuNTkgMjAxNi4zOCA0MDcuMzZDMjA1NC4zNyAzNzIuMzYgMjA5MC4xMSAzNTYuNzIgMjE0NS45NyAzNTYuNzJDMjIzMy4xMSAzNTYuNzIgMjMwMS42MyA0MjQuNDkgMjMwMS42MyA1MjguNzZaTTI3NTYuNjkgNTQ2LjYzQzI3NTYuNjkgNjUwLjE2IDI2NzcuNzUgNzMyLjA4IDI1NzkuNDMgNzMyLjA4QzI1MzkuMjIgNzMyLjA4IDI1MDUuNyA3MjEuNjYgMjQ3OC4xNCA3MDMuNzhMMjQ3OC4xNCA4OTYuNjhMMjM3NC42MiA4OTYuNjhMMjM3NC42MiAzNjcuODlMMjQ3OC4xNCAzNjcuODlMMjQ3OC4xNCAzODguNzRDMjUwNS43IDM3MC44NiAyNTM5LjIyIDM2MC40NCAyNTc5LjQzIDM2MC40NEMyNjc3Ljc1IDM2MC40NCAyNzU2LjY5IDQ0MS42MiAyNzU2LjY5IDU0Ni42M1pNMjY1NC42NiA1NDYuNjNDMjY1NC42NiA0OTMuNzUgMjYxNS45MyA0NDcuNTggMjU2Mi4zIDQ0Ny41OEMyNTMxLjc3IDQ0Ny41OCAyNTAxLjIzIDQ1OCAyNDc4LjE0IDQ4OS4yOUwyNDc4LjE0IDYwMy4yNEMyNTAxLjIzIDYzMy43NyAyNTMxLjc3IDY0NC4yIDI1NjIuMyA2NDQuMkMyNjE1LjkzIDY0NC4yIDI2NTQuNjYgNTk4Ljc3IDI2NTQuNjYgNTQ2LjYzWk0yOTE4LjMxIDcyNC42NEwyODE0Ljc4IDcyNC42NEwyODE0Ljc4IDE5NS44NEwyOTE4LjMxIDE5NS44NEwyOTE4LjMxIDcyNC42NFpNMzEyNi4wOSA3MjQuNjRMMzAyMi41NyA3MjQuNjRMMzAyMi41NyAzNjcuODlMMzEyNi4wOSAzNjcuODlMMzEyNi4wOSA3MjQuNjRaTTMwMTEuNCAyNDIuMDJDMzAxMS40IDIwNy4wMSAzMDM4Ljk1IDE4MC45NSAzMDczLjk2IDE4MC45NUMzMTA4LjIyIDE4MC45NSAzMTM1Ljc4IDIwNy4wMSAzMTM1Ljc4IDI0Mi4wMkMzMTM1Ljc4IDI3Ni4yOCAzMTA4LjIyIDMwMS42IDMwNzMuOTYgMzAxLjZDMzAzOC45NSAzMDEuNiAzMDExLjQgMjc2LjI4IDMwMTEuNCAyNDIuMDJaTTM1MDIuMiA3MTkuNDJDMzQ1OS4wMSA3MzIuODMgMzQzOS42NCA3MzUuODEgMzQwNi4xMyA3MzUuODFDMzMxOS43MyA3MzUuODEgMzI2My4xMyA2NzQuNzQgMzI2My4xMyA1ODIuMzhMMzI2My4xMyA0NTUuMDNMMzE4Ny45MSA0NTUuMDNMMzE4Ny45MSAzNjcuODlMMzI2My4xMyAzNjcuODlMMzI2My4xMyAyNDAuNTNMMzM2NS45MSAyNDAuNTNMMzM2NS45MSAzNjcuODlMMzQ5NC43NiAzNjcuODlMMzQ5NC43NiA0NTUuMDNMMzM2NS45MSA0NTUuMDNMMzM2NS45MSA1ODEuNjRDMzM2NS45MSA2MjEuODYgMzM5MC40OSA2NDAuNDggMzQyOC40NyA2NDAuNDhDMzQ0Ny44MyA2NDAuNDggMzQ2OC42OSA2MzYuMDEgMzQ4OC44IDYzMC44TDM1MDIuMiA3MTkuNDJaTTM5MTcuNzkgNzI0LjY0TDM4MTQuMjYgNzI0LjY0TDM4MTQuMjYgNjk5LjMxQzM3ODUuMjIgNzIyLjQgMzc1Mi40NCA3MzUuODEgMzcxMi4yMyA3MzUuODFDMzYxOC4zOCA3MzUuODEgMzU1NS44MiA2NjguMDMgMzU1NS44MiA1NjQuNTFMMzU1NS44MiAzNjcuODlMMzY1OS4zNSAzNjcuODlMMzY1OS4zNSA1NTQuODNDMzY1OS4zNSA2MTEuNDMgMzY4Ny42NSA2NDEuOTcgMzczNi4wNiA2NDEuOTdDMzc2Mi4xMyA2NDEuOTcgMzc5MC40MyA2MjYuMzMgMzgxNC4yNiA1OTcuMjhMMzgxNC4yNiAzNjcuODlMMzkxNy43OSAzNjcuODlMMzkxNy43OSA3MjQuNjRaTTQzNTcuMjEgNzI0LjY0TDQyNTMuNjkgNzI0LjY0TDQyNTMuNjkgNzAzLjc4QzQyMjYuMTMgNzIxLjY2IDQxOTIuNjIgNzMyLjA4IDQxNTIuNCA3MzIuMDhDNDA1NC4wOSA3MzIuMDggMzk3NC4zOSA2NTAuOSAzOTc0LjM5IDU0NS44OUMzOTc0LjM5IDQ0Mi4zNiA0MDU0LjA5IDM2MC40NCA0MTUyLjQgMzYwLjQ0QzQxOTIuNjIgMzYwLjQ0IDQyMjYuMTMgMzcwLjg2IDQyNTMuNjkgMzg4Ljc0TDQyNTMuNjkgMTk1Ljg0TDQzNTcuMjEgMTk1Ljg0TDQzNTcuMjEgNzI0LjY0Wk00MjUzLjY5IDYwMy4yNEw0MjUzLjY5IDQ4OS4yOUM0MjMwLjYgNDU4Ljc1IDQyMDAuMDYgNDQ4LjMyIDQxNjkuNTMgNDQ4LjMyQzQxMTUuMTYgNDQ4LjMyIDQwNzcuMTcgNDkzLjc1IDQwNzcuMTcgNTQ1Ljg5QzQwNzcuMTcgNTk4Ljc3IDQxMTUuMTYgNjQ0Ljk1IDQxNjkuNTMgNjQ0Ljk1QzQyMDAuMDYgNjQ0Ljk1IDQyMzAuNiA2MzQuNTIgNDI1My42OSA2MDMuMjRaTTQ3NzcuMjcgNTcyLjdMNDUxNC4zNiA1NzIuN0M0NTIyLjU1IDYxNC40MSA0NTUwLjExIDY0Ny4xOCA0NjA2LjcxIDY0Ny4xOEM0NjM1Ljc2IDY0Ny4xOCA0NjU1Ljg3IDYzOC4yNCA0NjY3LjA0IDYyMC4zN0w0Nzc1LjAzIDYyMC4zN0M0NzU1LjY3IDY4OC44OSA0Njg4LjY0IDczNS44MSA0NjA0LjQ4IDczNS44MUM0NDg5Ljc4IDczNS44MSA0NDEyLjMyIDY1My4xNCA0NDEyLjMyIDU0Ni42M0M0NDEyLjMyIDQzNi40MSA0NDg5LjA0IDM1Ni43MSA0NjAxLjUgMzU2LjcxQzQ3MDMuNTMgMzU2LjcxIDQ3NzkuNSA0MjguOTYgNDc3OS41IDUzOS4xOEM0Nzc5LjUgNTU0LjA4IDQ3NzguNzYgNTYyLjI3IDQ3NzcuMjcgNTcyLjdaTTQ1MTUuMSA1MTEuNjNMNDY3Ni43MiA1MTEuNjNDNDY3MC43NiA0NjYuOTQgNDY0My45NSA0NDIuMzYgNDYwMi4yNCA0NDIuMzZDNDU1Mi4zNCA0NDIuMzYgNDUyNC43OSA0NzEuNDEgNDUxNS4xIDUxMS42M1oiIC8+Cjwvc3ZnPg==" class="amp-logo-img" alt="Amplitude">
+    <div contenteditable="true" class="topband-event" data-key="event-tag">For 2K<span class="dot">·</span>Live-service gaming</div>
   </div>
-  <input type="file" id="imgInput" accept="image/*" style="display:none">
 
-  <div class="page" id="content" contenteditable="true">
+  <div class="intro">
+    <h1 contenteditable="true" data-key="front-h1">The ecosystem for<br>self-improving games</h1>
+    <p contenteditable="true" data-key="front-sub">Amplitude, Statsig, and Wave close the loop between what your studios build, what you ship, how players engage, and what you learn. Here is the whole picture for 2K.</p>
+  </div>
 
-    <!-- Context bar with white 2K logo -->
-    <!-- TODO: replace the 2K text wordmark with 2K's official logo asset when available -->
-    <header class="topbar">
-      <div class="brand-logo img-slot" contenteditable="false" onclick="pickImage(this)" title="Click to upload the 2K logo (use a white or transparent PNG)">2K</div>
-      <div class="context">For 2K &middot; Amplitude, Statsig &amp; Wave</div>
-    </header>
+  <div class="split">
 
-    <!-- Hero -->
-    <section class="hero">
-      <span class="eyebrow"><span class="dot"></span>The ecosystem for live-service games</span>
-      <h1>The ecosystem for self-improving games</h1>
-      <p class="lede">Statsig and Wave close the loop between what your studios build, what you ship, how players engage, and what you learn. Here is the whole picture for 2K.</p>
-    </section>
-
-    <!-- Statsig + Wave -->
-    <section class="split">
-      <div class="panel light">
-        <div style="margin-bottom:9px"><span class="img-slot empty" contenteditable="false" onclick="pickImage(this)"><span class="material-symbols-rounded">image</span> Upload Statsig logo</span></div>
-        <div class="kicker">The modern product development platform</div>
-        <h2>Statsig: measure what ships, ship what matters</h2>
-        <p>Test how every release lands with players, from live-ops events to monetization and AI-powered experiences, so 2K protects the player experience and optimizes at the speed of live service.</p>
-        <div class="tags">
-          <span class="tag">Experimentation</span>
-          <span class="tag">Feature flags</span>
-          <span class="tag">Release governance</span>
-          <span class="tag">Warehouse native</span>
-        </div>
-        <div class="stats">
-          <div class="stat"><div class="num">1T+</div><div class="lbl">Events per day</div></div>
-          <div class="stat"><div class="num">2.5B</div><div class="lbl">Monthly experiment subjects</div></div>
-          <div class="stat"><div class="num">99.99%</div><div class="lbl">Infra uptime</div></div>
-          <div class="stat"><div class="num">&lt;1ms</div><div class="lbl">Evaluation latency</div></div>
-        </div>
+    <!-- Statsig panel -->
+    <div class="panel panel-statsig">
+      <!-- TODO: Replace text wordmark with official Statsig logo (click to upload) -->
+      <div class="logo-upload-wrap" id="statsig-logo-wrap" title="Click to upload the official Statsig logo">
+        <div id="statsig-logo-display"><span class="statsig-wordmark" contenteditable="true" data-key="statsig-name">Statsig</span></div>
+        <div class="upload-overlay"><span>Upload Statsig logo</span></div>
       </div>
+      <div contenteditable="true" class="panel-eyebrow" data-key="statsig-eyebrow">The modern product development platform</div>
+      <h2 contenteditable="true" data-key="statsig-h2">Measure what ships. Ship what matters.</h2>
+      <p contenteditable="true" class="panel-body" data-key="statsig-body">Test how each release, from live-ops events to monetization and AI-powered experiences, lands with players, so 2K protects the player experience and optimizes at the speed of live service.</p>
+      <div class="chips">
+        <span contenteditable="true" class="chip" data-key="s-chip-0">Experimentation</span>
+        <span contenteditable="true" class="chip" data-key="s-chip-1">Feature flags</span>
+        <span contenteditable="true" class="chip" data-key="s-chip-2">Ship with certainty</span>
+        <span contenteditable="true" class="chip" data-key="s-chip-3">Feature release governance</span>
+        <span contenteditable="true" class="chip" data-key="s-chip-4">Warehouse native</span>
+      </div>
+      <div class="stats">
+        <div class="stat"><div contenteditable="true" class="stat-num" data-key="s-stat0-n">1T+</div><div contenteditable="true" class="stat-label" data-key="s-stat0-l">Events processed per day</div></div>
+        <div class="stat"><div contenteditable="true" class="stat-num" data-key="s-stat1-n">2.5B</div><div contenteditable="true" class="stat-label" data-key="s-stat1-l">Monthly experiment subjects</div></div>
+        <div class="stat"><div contenteditable="true" class="stat-num" data-key="s-stat2-n">99.99%</div><div contenteditable="true" class="stat-label" data-key="s-stat2-l">Infra uptime, API and console</div></div>
+        <div class="stat"><div contenteditable="true" class="stat-num" data-key="s-stat3-n">&lt;1ms</div><div contenteditable="true" class="stat-label" data-key="s-stat3-l">Post-init evaluation latency</div></div>
+      </div>
+    </div>
 
-      <div class="panel blue">
-        <div style="margin-bottom:9px"><span class="img-slot empty" contenteditable="false" onclick="pickImage(this)"><span class="material-symbols-rounded">image</span> Upload Wave logo</span></div>
-        <div class="kicker">Closed beta &middot; rolling out H2 2026</div>
-        <h2>Wave: the AI analyst for your player data</h2>
-        <p>Wave analyzes your player data and code, surfaces what to build next for each title, orchestrates the plans, PRs, and experiments, then measures the impact. It is rolling out now to a small group of design partners.</p>
-        <div class="tags">
-          <span class="tag">Opportunity detection</span>
-          <span class="tag">Autonomous analysis</span>
-          <span class="tag">Plans and PRs</span>
-        </div>
-        <div class="highlight">We run Wave at Amplitude today. It lifted our internal positive-feedback score from 5% to over 70%.</div>
+    <!-- Amplitude panel -->
+    <div class="panel panel-amp">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAwIDEwMDAiIHdpZHRoPSI1MDAwIiBoZWlnaHQ9IjEwMDAiPgoJPHN0eWxlPgoJCXRzcGFuIHsgd2hpdGUtc3BhY2U6cHJlIH0KCQkuc2hwMCB7IGZpbGw6IHdoaXRlIH0gCgk8L3N0eWxlPgoJPHBhdGggaWQ9IlBhdGggMSIgY2xhc3M9InNocDAiIGQ9Ik00MzguOTUgMjI4LjY0QzQzNi4xOSAyMjUgNDMzLjA1IDIyMy4wOSA0MjkuNTYgMjIzLjA5QzQyNi42OCAyMjMuMDkgNDI0LjA1IDIyNC4zOCA0MjIuMzYgMjI1LjQ2QzM5NS44NCAyNDYuMjkgMzU5LjU1IDMzNC41MyAzMjkuODEgNDUwLjhMMzU2LjE0IDQ1MS4xQzQwOC4xMyA0NTEuNjkgNDYxLjgyIDQ1Mi4zIDUxNC44OSA0NTMuMTJDNTAwLjkgMzk5Ljg2IDQ4Ny42OCAzNTQuMjEgNDc1LjU2IDMxNy4zNkM0NTcuODUgMjYzLjUgNDQ1Ljg4IDIzOS4zOSA0MzguOTUgMjI4LjY0WiIgLz4KCTxwYXRoIGlkPSJQYXRoIDIiIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xhc3M9InNocDAiIGQ9Ik05OTUuOTkgNTAyLjQ3Qzk5NS45OSA3NzcuNSA3NzMuMDMgMTAwMC40NyA0OTcuOTkgMTAwMC40N0MyMjIuOTUgMTAwMC40NyAtMC4wMSA3NzcuNSAtMC4wMSA1MDIuNDdDLTAuMDEgMjI3LjQzIDIyMi45NSA0LjQ3IDQ5Ny45OSA0LjQ3Qzc3My4wMyA0LjQ3IDk5NS45OSAyMjcuNDMgOTk1Ljk5IDUwMi40N1pNODY1LjgxIDQ5MS4wOEM4NjUuODEgNDc4LjI5IDg1Ni44IDQ2Ny42MyA4NDQuNjYgNDY1LjJDODQ0LjU5IDQ2NS4xOSA4NDQuNTIgNDY1LjE3IDg0NC40NCA0NjUuMTVDODQ0LjMgNDY1LjEzIDg0NC4xNiA0NjUuMDggODQ0LjAyIDQ2NS4wNkw4NDMuNTMgNDY1LjAxQzg0Mi4yNCA0NjQuOCA4NDAuOTMgNDY0LjY3IDgzOS41OSA0NjQuNjVMODM2LjEgNDY0LjMyQzc1Mi42OSA0NTguMzUgNjY2Ljg4IDQ1NiA1ODYuMzggNDU0LjM5TDU4Ni4yMiA0NTMuOEM1NDcuMDQgMzA2Ljg0IDQ5OC4xIDE1Ni41OSA0MzIuMTEgMTU2LjU5QzM3MC42MiAxNTYuODcgMzE1LjE5IDI1NS41OSAyNjcuMzIgNDUwLjA3QzIzMy41IDQ0OS42NCAyMDIuNjcgNDQ5LjE3IDE3My42IDQ0OC42N0MxNzEuOTUgNDQ4LjY0IDE3MC40NyA0NDguNjMgMTY5LjE1IDQ0OC42M0MxNjIuOTUgNDQ4LjYzIDE1OS45MiA0NDguODkgMTU4LjQyIDQ0OS4wOUMxNDIuMDUgNDUxLjk5IDEzMC4xNyA0NjYuMjcgMTMwLjE3IDQ4My4wNkMxMzAuMTcgNTAwLjE4IDE0Mi45NSA1MTQuODYgMTU5LjYgNTE3LjI2TDE1OS45NCA1MTcuNjFMMjUxLjY0IDUxNy42MUMyNDMuMTMgNTU2LjUyIDIzNS42NyA1OTUgMjI5LjQ0IDYzMi4wN0wyMjYuNzEgNjQ4LjM5TDIyNi42OCA2NDkuMTdDMjI2Ljc0IDY2MS43NiAyMzcuMDMgNjcyIDI0OS42MSA2NzJDMjU3LjU5IDY3MiAyNjQuODIgNjY3Ljg0IDI2OC45NSA2NjEuMzZMMjY5LjYgNjYxLjg4TDMxNC42OCA1MTcuNjFMNTMxLjgyIDUxNy42MUM1NDguNDEgNTgwLjI5IDU2NS42MiA2NDUuMDEgNTg4LjM2IDcwNS43NUM2MDAuNTIgNzM4LjIzIDYyOC45OSA4MTQuMyA2NzYuNTcgODE0LjY4TDY3Ny4xMSA4MTQuNjhDNzUwLjc1IDgxNC42OCA3NzkuNDUgNjk1LjczIDc5OC40NiA2MTYuOTlDODAyLjU0IDYwMC4wNSA4MDYuMDcgNTg1LjQyIDgwOS40IDU3NC42N0w4MTAuNzMgNTcwLjIzTDgxMC43MiA1NzAuMjNDODExLjA0IDU2OS4xOSA4MTEuMjEgNTY4LjA5IDgxMS4yMSA1NjYuOTRDODExLjIxIDU2MC42NCA4MDYuMSA1NTUuNTMgNzk5LjggNTU1LjUzQzc5NC45MSA1NTUuNTMgNzkwLjc1IDU1OC42IDc4OS4xMiA1NjIuOTJMNzg5LjEgNTYyLjkxTDc4Ny41IDU2Ny4zM0M3ODEuMjUgNTg0LjYzIDc3NS40NyA2MDAuOTkgNzcwLjM1IDYxNS40OUw3NjkuOTYgNjE2LjU4QzczOC4wOSA3MDYuODUgNzIzLjU0IDc0OC4wNSA2OTUuMDQgNzQ4LjA2TDY5NC4zNCA3NDguMDVMNjkzLjk0IDc0OC4xMUw2OTMuMjMgNzQ4LjA5QzY1Ni43NSA3NDguMDkgNjIyLjQgNTk5Ljc5IDYwOS40NyA1NDMuOTdDNjA3LjIzIDUzNC4zIDYwNS4xOCA1MjUuNDIgNjAzLjI5IDUxNy42MUw4MzkuMTggNTE3LjYxQzg0My42MSA1MTcuNjEgODQ3Ljc4IDUxNi41IDg1MS40NCA1MTQuNThDODUxLjQ3IDUxNC41NyA4NTEuNDkgNTE0LjU2IDg1MS41MSA1MTQuNTVDODUxLjg4IDUxNC4zNiA4NTIuMjMgNTE0LjE0IDg1Mi41OSA1MTMuOTNDODUyLjk5IDUxMy43IDg1My4zOCA1MTMuNDcgODUzLjc2IDUxMy4yMkM4NTMuOTUgNTEzLjEgODU0LjEzIDUxMi45NyA4NTQuMzEgNTEyLjg0Qzg1NC44OCA1MTIuNDUgODU1LjQzIDUxMi4wNCA4NTUuOTcgNTExLjZDODU2LjAxIDUxMS41NyA4NTYuMDQgNTExLjU0IDg1Ni4wOCA1MTEuNTFDODYyLjAyIDUwNi42NCA4NjUuODEgNDk5LjI2IDg2NS44MSA0OTEuMDhaTTEyNzIuMzUgNjI3LjA3TDEyMzIuODcgNzI0LjY0TDExMTguMTggNzI0LjY0TDEzMzYuNCAyMTUuMjFMMTQzNy42OSAyMTUuMjFMMTY1NS4xNiA3MjQuNjRMMTU0MS4yMSA3MjQuNjRMMTUwMS43NCA2MjcuMDdMMTI3Mi4zNSA2MjcuMDdaTTEzODYuMyAzNDQuMDVMMTMxMS44MiA1MjkuNUwxNDYyLjI3IDUyOS41TDEzODYuMyAzNDQuMDVaTTIzMDEuNjMgNTI4Ljc2TDIzMDEuNjMgNzI0LjY0TDIxOTguMTEgNzI0LjY0TDIxOTguMTEgNTM3LjdDMjE5OC4xMSA0ODEuMDkgMjE3MC41NSA0NTAuNTYgMjEyMi4xNCA0NTAuNTZDMjEwMC41NCA0NTAuNTYgMjA3Ni43MSA0NjAuMjQgMjA1NS4xMSA0OTAuMDNDMjA1Ni42IDUwMi42OSAyMDU4LjA5IDUxNS4zNSAyMDU4LjA5IDUyOC43NkwyMDU4LjA5IDcyNC42NEwxOTU0LjU2IDcyNC42NEwxOTU0LjU2IDUzNy43QzE5NTQuNTYgNDgxLjA5IDE5MjcuMDEgNDUwLjU2IDE4NzcuODUgNDUwLjU2QzE4NTcuNzQgNDUwLjU2IDE4MzUuNCA0NjIuNDcgMTgxNC41NSA0OTAuNzhMMTgxNC41NSA3MjQuNjRMMTcxMS4wMiA3MjQuNjRMMTcxMS4wMiAzNjcuODlMMTgxNC41NSAzNjcuODlMMTgxNC41NSAzODkuNDlDMTgzNi44OSAzNjguNjMgMTg2MC43MiAzNTYuNzIgMTkwMi40MyAzNTYuNzJDMTk0Ny44NiAzNTYuNzIgMTk4OC4wOCAzNzQuNTkgMjAxNi4zOCA0MDcuMzZDMjA1NC4zNyAzNzIuMzYgMjA5MC4xMSAzNTYuNzIgMjE0NS45NyAzNTYuNzJDMjIzMy4xMSAzNTYuNzIgMjMwMS42MyA0MjQuNDkgMjMwMS42MyA1MjguNzZaTTI3NTYuNjkgNTQ2LjYzQzI3NTYuNjkgNjUwLjE2IDI2NzcuNzUgNzMyLjA4IDI1NzkuNDMgNzMyLjA4QzI1MzkuMjIgNzMyLjA4IDI1MDUuNyA3MjEuNjYgMjQ3OC4xNCA3MDMuNzhMMjQ3OC4xNCA4OTYuNjhMMjM3NC42MiA4OTYuNjhMMjM3NC42MiAzNjcuODlMMjQ3OC4xNCAzNjcuODlMMjQ3OC4xNCAzODguNzRDMjUwNS43IDM3MC44NiAyNTM5LjIyIDM2MC40NCAyNTc5LjQzIDM2MC40NEMyNjc3Ljc1IDM2MC40NCAyNzU2LjY5IDQ0MS42MiAyNzU2LjY5IDU0Ni42M1pNMjY1NC42NiA1NDYuNjNDMjY1NC42NiA0OTMuNzUgMjYxNS45MyA0NDcuNTggMjU2Mi4zIDQ0Ny41OEMyNTMxLjc3IDQ0Ny41OCAyNTAxLjIzIDQ1OCAyNDc4LjE0IDQ4OS4yOUwyNDc4LjE0IDYwMy4yNEMyNTAxLjIzIDYzMy43NyAyNTMxLjc3IDY0NC4yIDI1NjIuMyA2NDQuMkMyNjE1LjkzIDY0NC4yIDI2NTQuNjYgNTk4Ljc3IDI2NTQuNjYgNTQ2LjYzWk0yOTE4LjMxIDcyNC42NEwyODE0Ljc4IDcyNC42NEwyODE0Ljc4IDE5NS44NEwyOTE4LjMxIDE5NS44NEwyOTE4LjMxIDcyNC42NFpNMzEyNi4wOSA3MjQuNjRMMzAyMi41NyA3MjQuNjRMMzAyMi41NyAzNjcuODlMMzEyNi4wOSAzNjcuODlMMzEyNi4wOSA3MjQuNjRaTTMwMTEuNCAyNDIuMDJDMzAxMS40IDIwNy4wMSAzMDM4Ljk1IDE4MC45NSAzMDczLjk2IDE4MC45NUMzMTA4LjIyIDE4MC45NSAzMTM1Ljc4IDIwNy4wMSAzMTM1Ljc4IDI0Mi4wMkMzMTM1Ljc4IDI3Ni4yOCAzMTA4LjIyIDMwMS42IDMwNzMuOTYgMzAxLjZDMzAzOC45NSAzMDEuNiAzMDExLjQgMjc2LjI4IDMwMTEuNCAyNDIuMDJaTTM1MDIuMiA3MTkuNDJDMzQ1OS4wMSA3MzIuODMgMzQzOS42NCA3MzUuODEgMzQwNi4xMyA3MzUuODFDMzMxOS43MyA3MzUuODEgMzI2My4xMyA2NzQuNzQgMzI2My4xMyA1ODIuMzhMMzI2My4xMyA0NTUuMDNMMzE4Ny45MSA0NTUuMDNMMzE4Ny45MSAzNjcuODlMMzI2My4xMyAzNjcuODlMMzI2My4xMyAyNDAuNTNMMzM2NS45MSAyNDAuNTNMMzM2NS45MSAzNjcuODlMMzQ5NC43NiAzNjcuODlMMzQ5NC43NiA0NTUuMDNMMzM2NS45MSA0NTUuMDNMMzM2NS45MSA1ODEuNjRDMzM2NS45MSA2MjEuODYgMzM5MC40OSA2NDAuNDggMzQyOC40NyA2NDAuNDhDMzQ0Ny44MyA2NDAuNDggMzQ2OC42OSA2MzYuMDEgMzQ4OC44IDYzMC44TDM1MDIuMiA3MTkuNDJaTTM5MTcuNzkgNzI0LjY0TDM4MTQuMjYgNzI0LjY0TDM4MTQuMjYgNjk5LjMxQzM3ODUuMjIgNzIyLjQgMzc1Mi40NCA3MzUuODEgMzcxMi4yMyA3MzUuODFDMzYxOC4zOCA3MzUuODEgMzU1NS44MiA2NjguMDMgMzU1NS44MiA1NjQuNTFMMzU1NS44MiAzNjcuODlMMzY1OS4zNSAzNjcuODlMMzY1OS4zNSA1NTQuODNDMzY1OS4zNSA2MTEuNDMgMzY4Ny42NSA2NDEuOTcgMzczNi4wNiA2NDEuOTdDMzc2Mi4xMyA2NDEuOTcgMzc5MC40MyA2MjYuMzMgMzgxNC4yNiA1OTcuMjhMMzgxNC4yNiAzNjcuODlMMzkxNy43OSAzNjcuODlMMzkxNy43OSA3MjQuNjRaTTQzNTcuMjEgNzI0LjY0TDQyNTMuNjkgNzI0LjY0TDQyNTMuNjkgNzAzLjc4QzQyMjYuMTMgNzIxLjY2IDQxOTIuNjIgNzMyLjA4IDQxNTIuNCA3MzIuMDhDNDA1NC4wOSA3MzIuMDggMzk3NC4zOSA2NTAuOSAzOTc0LjM5IDU0NS44OUMzOTc0LjM5IDQ0Mi4zNiA0MDU0LjA5IDM2MC40NCA0MTUyLjQgMzYwLjQ0QzQxOTIuNjIgMzYwLjQ0IDQyMjYuMTMgMzcwLjg2IDQyNTMuNjkgMzg4Ljc0TDQyNTMuNjkgMTk1Ljg0TDQzNTcuMjEgMTk1Ljg0TDQzNTcuMjEgNzI0LjY0Wk00MjUzLjY5IDYwMy4yNEw0MjUzLjY5IDQ4OS4yOUM0MjMwLjYgNDU4Ljc1IDQyMDAuMDYgNDQ4LjMyIDQxNjkuNTMgNDQ4LjMyQzQxMTUuMTYgNDQ4LjMyIDQwNzcuMTcgNDkzLjc1IDQwNzcuMTcgNTQ1Ljg5QzQwNzcuMTcgNTk4Ljc3IDQxMTUuMTYgNjQ0Ljk1IDQxNjkuNTMgNjQ0Ljk1QzQyMDAuMDYgNjQ0Ljk1IDQyMzAuNiA2MzQuNTIgNDI1My42OSA2MDMuMjRaTTQ3NzcuMjcgNTcyLjdMNDUxNC4zNiA1NzIuN0M0NTIyLjU1IDYxNC40MSA0NTUwLjExIDY0Ny4xOCA0NjA2LjcxIDY0Ny4xOEM0NjM1Ljc2IDY0Ny4xOCA0NjU1Ljg3IDYzOC4yNCA0NjY3LjA0IDYyMC4zN0w0Nzc1LjAzIDYyMC4zN0M0NzU1LjY3IDY4OC44OSA0Njg4LjY0IDczNS44MSA0NjA0LjQ4IDczNS44MUM0NDg5Ljc4IDczNS44MSA0NDEyLjMyIDY1My4xNCA0NDEyLjMyIDU0Ni42M0M0NDEyLjMyIDQzNi40MSA0NDg5LjA0IDM1Ni43MSA0NjAxLjUgMzU2LjcxQzQ3MDMuNTMgMzU2LjcxIDQ3NzkuNSA0MjguOTYgNDc3OS41IDUzOS4xOEM0Nzc5LjUgNTU0LjA4IDQ3NzguNzYgNTYyLjI3IDQ3NzcuMjcgNTcyLjdaTTQ1MTUuMSA1MTEuNjNMNDY3Ni43MiA1MTEuNjNDNDY3MC43NiA0NjYuOTQgNDY0My45NSA0NDIuMzYgNDYwMi4yNCA0NDIuMzZDNDU1Mi4zNCA0NDIuMzYgNDUyNC43OSA0NzEuNDEgNDUxNS4xIDUxMS42M1oiIC8+Cjwvc3ZnPg==" class="amp-logo-img" alt="Amplitude" style="height:26px;align-self:flex-start;">
+      <div contenteditable="true" class="panel-eyebrow" data-key="amp-eyebrow">The platform for self-improving products</div>
+      <h2 contenteditable="true" data-key="amp-h2">A new era for product teams.</h2>
+      <p contenteditable="true" class="panel-body" data-key="amp-body">From analytics to feedback to code, Amplitude brings AI into every step of building self-improving games, across console, PC, and mobile.</p>
+      <div class="chips">
+        <span contenteditable="true" class="chip" data-key="a-chip-0">AI agents</span>
+        <span contenteditable="true" class="chip" data-key="a-chip-1">Product analytics</span>
+        <span contenteditable="true" class="chip" data-key="a-chip-2">AI feedback</span>
+        <span contenteditable="true" class="chip" data-key="a-chip-3">Agent analytics</span>
+        <span contenteditable="true" class="chip" data-key="a-chip-4">MCP</span>
       </div>
-    </section>
-
-    <!-- The loop -->
-    <section class="loop">
-      <div class="section-head">
-        <h2>The Build, Ship, Use, Learn loop</h2>
-        <p>A self-improving game is not one tool. It is a loop across your whole stack, and every turn compounds.</p>
+      <div class="stats">
+        <div class="stat"><div contenteditable="true" class="stat-num" data-key="a-stat0-n">76%</div><div contenteditable="true" class="stat-label" data-key="a-stat0-l">Customer issues resolved by Global Agent</div></div>
+        <div class="stat"><div contenteditable="true" class="stat-num" data-key="a-stat1-n">4,900+</div><div contenteditable="true" class="stat-label" data-key="a-stat1-l">Customers running Global Agent</div></div>
+        <div class="stat"><div contenteditable="true" class="stat-num" data-key="a-stat2-n">1.34M</div><div contenteditable="true" class="stat-label" data-key="a-stat2-l">Weekly AI interactions</div></div>
+        <div class="stat"><div contenteditable="true" class="stat-num" data-key="a-stat3-n">2M</div><div contenteditable="true" class="stat-label" data-key="a-stat3-l">Events per month, free</div></div>
       </div>
-      <div class="loop-grid">
-        <div class="loop-card">
-          <div class="icon"><span class="material-symbols-rounded">construction</span></div>
-          <div class="prod">Wave</div><h3>Build</h3>
-          <p>Wave reads signals across your player data and code and surfaces what is worth building next.</p>
-        </div>
-        <div class="loop-card">
-          <div class="icon"><span class="material-symbols-rounded">rocket_launch</span></div>
-          <div class="prod">Statsig</div><h3>Ship</h3>
-          <p>Every change goes out behind flags and experiments, so you ship fast without betting on a guess.</p>
-        </div>
-        <div class="loop-card">
-          <div class="icon"><span class="material-symbols-rounded">monitoring</span></div>
-          <div class="prod">Amplitude</div><h3>Use</h3>
-          <p>Capture how players behave across console, PC, and mobile in one trusted view.</p>
-        </div>
-        <div class="loop-card">
-          <div class="icon"><span class="material-symbols-rounded">autorenew</span></div>
-          <div class="prod">Together</div><h3>Learn</h3>
-          <p>Impact is measured automatically, wins roll out, and the next opportunity surfaces.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Steps -->
-    <section class="steps">
-      <div class="row">
-        <h2>Your next three moves with 2K</h2>
-        <div class="sub">A short path to seeing Wave and Statsig on a real 2K title.</div>
-      </div>
-      <div class="steps-grid">
-        <div class="step"><div class="n">1</div><h4>See the loop live</h4><p>Walk through Wave and Statsig on one of your live-service titles with our team.</p></div>
-        <div class="step"><div class="n">2</div><h4>Prioritize Wave access</h4><p>Line up 2K for Wave design-partner access as it rolls out through H2 2026.</p></div>
-        <div class="step"><div class="n">3</div><h4>Book your 1:1</h4><p>Meet your Amplitude team to scope a first experiment and a shared success plan.</p></div>
-      </div>
-    </section>
-
-    <!-- Customer logo bar (bottom, near footer) -->
-    <section class="logobar">
-      <div class="cap">Trusted by product and data teams at</div>
-      <div class="logos">
-        <span>NBCUniversal</span><span>Burger King</span><span>Atlassian</span><span>Square</span><span>Notion</span><span>Figma</span>
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="footer">
-      <div class="copy">&copy; 2026 Amplitude, Inc. All rights reserved. &middot; amplitude.com</div>
-      <div class="ae">
-        <div class="name">Nate Harrison</div>
-        <div class="role">Enterprise Account Executive</div>
-        <div class="email">nate.harrison@amplitude.com</div>
-      </div>
-    </footer>
+    </div>
 
   </div>
 
-  <div class="toast" id="toast"></div>
+  <!-- Wave band -->
+  <div class="waveband">
+    <div class="waveband-left">
+      <div class="wave-name"><span class="material-symbols-rounded">airwave</span><span contenteditable="true" data-key="wave-name">Wave</span></div>
+      <div contenteditable="true" class="wave-status" data-key="wave-status">Closed beta · Rolling out H2 2026</div>
+    </div>
+    <div class="waveband-right">
+      <p contenteditable="true" class="wave-copy" data-key="wave-copy">Wave analyzes your player data and code, surfaces what to build, orchestrates the plans, PRs, and experiments, then measures the impact. It is rolling out now to a small group of design partners.</p>
+      <p contenteditable="true" class="wave-proof" data-key="wave-proof">We use Wave at Amplitude today: it auto-triages bugs, optimizes pages and flows, and sharpens our agents. It lifted our internal positive-feedback score from 5% to over 70%. Read the story at <span class="wave-link">amplitude.com/blog/wave</span></p>
+    </div>
+  </div>
+
+  <div class="front-footer">
+    <div contenteditable="true" class="teaser" data-key="front-teaser"><span class="material-symbols-rounded">event</span>See the loop run on your own titles. Book a working session with your Amplitude team.</div>
+    <div class="flip">Your next moves on the back →</div>
+  </div>
+
+</div><!-- /page 1 -->
+
+<!-- ═══════════ PAGE 2: BACK ═══════════ -->
+<div class="page">
+
+  <div class="back-header">
+    <div class="shapes-wrap">
+      <svg viewBox="0 0 360 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="180" y="-55" width="150" height="150" rx="22" fill="url(#g1)" opacity="0.9" transform="rotate(18 180 -55)"></rect>
+        <rect x="255" y="25" width="125" height="125" rx="18" fill="url(#g2)" opacity="0.7" transform="rotate(-8 255 25)"></rect>
+        <rect x="125" y="12" width="85" height="85" rx="14" fill="url(#g3)" opacity="0.5" transform="rotate(30 125 12)"></rect>
+        <rect x="285" y="105" width="170" height="170" rx="28" fill="url(#g4)" opacity="0.25" transform="rotate(-15 285 105)"></rect>
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4083FF"></stop><stop offset="100%" stop-color="#0052F2"></stop></linearGradient>
+          <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6980FF"></stop><stop offset="100%" stop-color="#0052F2"></stop></linearGradient>
+          <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#A373FF"></stop><stop offset="100%" stop-color="#6980FF"></stop></linearGradient>
+          <linearGradient id="g4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0052F2"></stop><stop offset="100%" stop-color="#001A4F"></stop></linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <div class="back-header-content">
+      <div contenteditable="true" class="back-eyebrow" data-key="back-eyebrow">Built for live-service teams</div>
+      <h1 contenteditable="true" data-key="session-title">Games That Improve Themselves</h1>
+      <div contenteditable="true" class="session-sub" data-key="session-sub">Closing the Build, Ship, Use, Learn loop for 2K</div>
+      <div class="session-meta">
+        <div class="meta-item"><span class="material-symbols-rounded">person</span><span contenteditable="true" data-key="speaker">Your Amplitude account team, dedicated to 2K</span></div>
+        <div class="meta-item"><span class="material-symbols-rounded">calendar_today</span><span contenteditable="true" data-key="session-date">Statsig and Amplitude, live today</span></div>
+        <div class="meta-item"><span class="material-symbols-rounded">schedule</span><span contenteditable="true" data-key="session-times">Wave, rolling out H2 2026</span></div>
+      </div>
+      <p contenteditable="true" class="abstract" data-key="abstract">Coding agents have collapsed the cost of building to near zero, so the real bottleneck is knowing what is worth building at all. With Wave, Statsig, and Amplitude analytics, 2K can read signals across every title, ship changes behind experiments, and measure whether they moved retention, engagement, and spend. Stop reporting on the past and start building the future of your live-service games.</p>
+    </div>
+  </div>
+
+  <div class="back-body">
+
+    <div contenteditable="true" class="section-title" data-key="loop-title">The Build, Ship, Use, Learn loop</div>
+    <p contenteditable="true" class="section-sub" data-key="loop-sub">A self-improving game is not one tool. It is a loop that runs across your whole stack, and every turn of it compounds.</p>
+
+    <div class="loop-row">
+      <div class="loop-step">
+        <div class="loop-icon"><span class="material-symbols-rounded">construction</span></div>
+        <div contenteditable="true" class="loop-kicker" data-key="step0-k">Wave</div>
+        <div contenteditable="true" class="loop-title" data-key="step0-t">Build</div>
+        <div contenteditable="true" class="loop-desc" data-key="step0-d">Wave reads signals across your player data and code and surfaces what is worth building next, specified and ready for your team or your agents.</div>
+      </div>
+      <div class="loop-arrow"><span class="material-symbols-rounded">arrow_forward</span></div>
+      <div class="loop-step">
+        <div class="loop-icon"><span class="material-symbols-rounded">rocket_launch</span></div>
+        <div contenteditable="true" class="loop-kicker" data-key="step1-k">Statsig</div>
+        <div contenteditable="true" class="loop-title" data-key="step1-t">Ship</div>
+        <div contenteditable="true" class="loop-desc" data-key="step1-d">Every change goes out behind feature flags and controlled experiments, so you ship fast without betting the player experience on a guess.</div>
+      </div>
+      <div class="loop-arrow"><span class="material-symbols-rounded">arrow_forward</span></div>
+      <div class="loop-step">
+        <div class="loop-icon"><span class="material-symbols-rounded">monitoring</span></div>
+        <div contenteditable="true" class="loop-kicker" data-key="step2-k">Amplitude</div>
+        <div contenteditable="true" class="loop-title" data-key="step2-t">Use</div>
+        <div contenteditable="true" class="loop-desc" data-key="step2-d">Amplitude captures how players actually behave across console, PC, and mobile, from first launch to recurring spend, in one trusted view.</div>
+      </div>
+      <div class="loop-arrow"><span class="material-symbols-rounded">arrow_forward</span></div>
+      <div class="loop-step">
+        <div class="loop-icon"><span class="material-symbols-rounded">autorenew</span></div>
+        <div contenteditable="true" class="loop-kicker" data-key="step3-k">Together</div>
+        <div contenteditable="true" class="loop-title" data-key="step3-t">Learn</div>
+        <div contenteditable="true" class="loop-desc" data-key="step3-d">Impact is measured automatically, wins roll out, and the next opportunity surfaces. The loop starts again, and your game improves itself.</div>
+      </div>
+    </div>
+
+    <div contenteditable="true" class="section-title" data-key="actions-title">Your next three moves</div>
+    <p contenteditable="true" class="section-sub" data-key="actions-sub">A short path to seeing Wave and Statsig running on a real 2K title.</p>
+
+    <div class="actions">
+      <div class="action">
+        <div class="action-num">1</div>
+        <div contenteditable="true" class="action-title" data-key="act0-t">See the loop live</div>
+        <div contenteditable="true" class="action-desc" data-key="act0-d">Walk through Wave and Statsig on one of your live-service titles and your current analytics stack with our team.</div>
+      </div>
+      <div class="action">
+        <div class="action-num">2</div>
+        <div contenteditable="true" class="action-title" data-key="act1-t">Prioritize Wave access</div>
+        <div contenteditable="true" class="action-desc" data-key="act1-d">Line up 2K for Wave design-partner access as it rolls out through H2 2026.</div>
+      </div>
+      <div class="action">
+        <div class="action-num">3</div>
+        <div contenteditable="true" class="action-title" data-key="act2-t">Book your 1:1</div>
+        <div contenteditable="true" class="action-desc" data-key="act2-d">Meet your Amplitude account team to scope a first experiment and a shared success plan. Reach out at <span class="act-link">nate.harrison@amplitude.com</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="back-footer">
+    <div class="footer-copy">© 2026 Amplitude, Inc. All rights reserved. &nbsp;·&nbsp; amplitude.com</div>
+    <div class="ae-block">
+      <div contenteditable="true" class="ae-name" data-key="ae-name">Nate Harrison</div>
+      <div contenteditable="true" class="ae-title" data-key="ae-title">Enterprise Account Executive</div>
+      <div contenteditable="true" class="ae-contact" data-key="ae-contact">nate.harrison@amplitude.com</div>
+    </div>
+  </div>
+
+</div><!-- /page 2 -->
 
 <script>
-  (function(){
-    var KEY='2k-onepager-edits-v1';
-    var c=document.getElementById('content');
-    var original=c.innerHTML;
-    var saved=null;
-    try{saved=localStorage.getItem(KEY);}catch(e){}
-    if(saved){c.innerHTML=saved;}
-    function toast(msg){
-      var t=document.getElementById('toast');
-      t.textContent=msg;t.classList.add('show');
-      setTimeout(function(){t.classList.remove('show');},1600);
-    }
-    window.saveEdits=function(){
-      try{localStorage.setItem(KEY,c.innerHTML);toast('Edits saved to this browser');}
-      catch(e){toast('Could not save in this browser');}
-    };
-    window.resetEdits=function(){
-      try{localStorage.removeItem(KEY);}catch(e){}
-      c.innerHTML=original;toast('Reset to original');
-    };
+const STORAGE_KEY = '2k-onepager-edits';
 
-    /* ---- Image add / edit ---- */
-    var fi=document.getElementById('imgInput');
-    var pendingSlot=null;
-    window.pickImage=function(slot){pendingSlot=slot;fi.dataset.mode='slot';fi.value='';fi.click();};
-    window.addImageAtCursor=function(){pendingSlot=null;fi.dataset.mode='insert';fi.value='';fi.click();};
-    fi.addEventListener('change',function(){
-      var f=fi.files&&fi.files[0];if(!f)return;
-      if(!/^image\//.test(f.type)){toast('Please choose an image file');return;}
-      var rd=new FileReader();
-      rd.onload=function(){
-        if(fi.dataset.mode==='insert'){
-          c.focus();
-          var img='<img class="inserted" src="'+rd.result+'" alt="">';
-          var ok=false;
-          try{ok=document.execCommand('insertHTML',false,img);}catch(e){}
-          if(!ok){var d=document.createElement('div');d.innerHTML=img;c.querySelector('.hero').appendChild(d.firstChild);}
-          toast('Image added. Save edits to keep it');
-        } else if(pendingSlot){
-          pendingSlot.classList.remove('empty');
-          pendingSlot.innerHTML='<img src="'+rd.result+'" alt="logo">';
-          toast('Logo added. Save edits to keep it');
-        }
-        fi.dataset.mode='';pendingSlot=null;
-      };
-      rd.readAsDataURL(f);
-    });
-  })();
+function saveToStorage() {
+  const data = {};
+  document.querySelectorAll('[contenteditable][data-key]').forEach(el => {
+    data[el.dataset.key] = el.innerHTML;
+  });
+  const statsigLogo = document.getElementById('statsig-logo-display').querySelector('img');
+  if (statsigLogo) data['__statsig-logo'] = statsigLogo.src;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const btn = document.getElementById('save-status');
+  if (btn) { btn.textContent = '✓ Saved'; setTimeout(() => { btn.textContent = '💾 Save edits'; }, 1500); }
+}
+
+function restoreFromStorage() {
+  let data;
+  try { data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { return; }
+  document.querySelectorAll('[contenteditable][data-key]').forEach(el => {
+    if (data[el.dataset.key] !== undefined) el.innerHTML = data[el.dataset.key];
+  });
+  if (data['__statsig-logo']) {
+    document.getElementById('statsig-logo-display').innerHTML = `<img src="${data['__statsig-logo']}" style="height:30px;width:auto;display:block;" alt="Statsig">`;
+  }
+}
+
+function resetEdits() {
+  if (!confirm('Reset all edits back to defaults?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+function saveHTML() {
+  const clone = document.documentElement.cloneNode(true);
+  clone.querySelectorAll('.toolbar, input[type=file]').forEach(el => el.remove());
+  clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+  clone.querySelectorAll('.upload-overlay').forEach(el => el.remove());
+  clone.querySelectorAll('[onclick]').forEach(el => el.removeAttribute('onclick'));
+  const html = '<!DOCTYPE html>\n' + clone.outerHTML;
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = '2k-one-pager.html';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function printPDF() {
+  if (document.activeElement) document.activeElement.blur();
+  setTimeout(() => window.print(), 150);
+}
+
+function readFile(file, cb) {
+  const r = new FileReader();
+  r.onload = e => cb(e.target.result);
+  r.readAsDataURL(file);
+}
+
+document.getElementById('statsig-logo-wrap').addEventListener('click', () => {
+  document.getElementById('upload-statsig-logo').click();
+});
+document.getElementById('upload-statsig-logo').addEventListener('change', function() {
+  if (!this.files[0]) return;
+  readFile(this.files[0], url => {
+    document.getElementById('statsig-logo-display').innerHTML = `<img src="${url}" style="height:30px;width:auto;display:block;" alt="Statsig">`;
+    saveToStorage();
+  });
+  this.value = '';
+});
+
+document.addEventListener('input', saveToStorage);
+restoreFromStorage();
 </script>
-</body>
-</html>
+
+</body></html>
